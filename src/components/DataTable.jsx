@@ -14,12 +14,6 @@ const firebaseConfig = {
   appId: '1:726974774495:web:9295ebd10de056f9f6bd6a'
 }
 
-var storage,
-    storageRef,
-    storageFileListRef,
-    firestore,
-    firestoreFileList
-
 
 class DataTable extends Component {
 
@@ -31,8 +25,29 @@ class DataTable extends Component {
     }
 
     this.state = {
-      files: {}
+      storage: '',
+      storageRef: '',
+      storageFileListRef: '',
+      firestore: '',
+      firestoreFileCollection: '',
+      newFile: {
+        file: '',
+        description: '',
+        username: ''
+      }
     }
+
+    this.storage = firebase.storage()
+    this.storageRef = this.storage.ref()
+    this.storageFileListRef = this.storageRef.child('files')
+    this.firestore = firebase.firestore()
+    this.firestoreFileCollection = this.firestore.collection('files')
+
+    this.fileInput = React.createRef();
+
+    this.handleUploadFileChange = this.handleUploadFileChange.bind(this)
+    this.handleUpload = this.handleUpload.bind(this)
+    this.handleDelete = this.handleDelete.bind(this)
   }
 
   UNSAFE_componentWillMount() {
@@ -41,53 +56,39 @@ class DataTable extends Component {
       console.log('signed in as anon')
     })
 
-    storage = firebase.storage()
-    storageRef = storage.ref()
-    storageFileListRef = storageRef.child('files')
-    firestore = firebase.firestore()
-    firestoreFileList = firestore.collection('files')
-
     this.getFileList()
-
-  }
-
-  uploadFile() {
-
   }
 
   getFileList() {
     
-    firestoreFileList.get().then( result => {
-      //each doc
-      
+    this.firestoreFileCollection.onSnapshot( querySnapshot => {
       let filesData = []
-      result.docs.map( doc => {
-        console.log('doc.data', doc.data())
+      querySnapshot.forEach( doc => {
+        console.log(doc.data())
         filesData.push({
           name: doc.data().name,
           description: doc.data().description,
           uploadedBy: doc.data().uploadedBy,
           createdAt: doc.data().createdAt,
-          id: doc.data().id,
-          type: doc.data().type
+          id: doc.id,
+          type: doc.data().type,
+          filePath: doc.data().filePath
         })
       })
-      console.log('filesData', filesData)
+      //console.log('filesData', filesData)
       this.setState({
         data: filesData
       })
-    }).catch((error) => {
-      console.log(error)
     })
 
-    storageFileListRef.listAll().then( res => {
+    this.storageFileListRef.listAll().then( res => {
       res.prefixes.forEach( folderRef => {
         // All the prefixes under storageFileListRef.
         // You may call listAll() recursively on them.
       });
       res.items.forEach( itemRef => {
         // All the items under storageFileListRef.
-        console.log('itemRef', itemRef)
+        //console.log('itemRef', itemRef)
       });
       }).catch( error => {
         console.log(error.serverResponse_)
@@ -95,58 +96,179 @@ class DataTable extends Component {
     })
   }
 
+  handleUploadFileChange(e) {
+    let newFileState = this.state.newFile
+
+    switch (e.target.id) {
+      case 'username':
+        newFileState.username = e.target.value
+        break
+      case 'description':
+        newFileState.description = e.target.value
+        break
+    }
+
+    this.setState({
+      newFile: newFileState
+    })
+  }
+
+  handleUpload(e) {
+    console.log('handleUpload')
+    e.preventDefault()
+    
+    console.log(this.fileInput)
+
+    const username = this.state.newFile.username
+    const description = this.state.newFile.description
+    const file = this.fileInput.current.files[0]
+    const fileName = this.fileInput.current.files[0].name
+    const fileType = this.fileInput.current.files[0].type
+
+    const newFileRef = this.storageRef.child(fileName)
+    const newFileCollectionRef = this.storageRef.child(`files/${fileName}`)
+    // upload file first
+    newFileCollectionRef.put(file).then( uploadedFile => {
+      console.log('upload done', uploadedFile)
+      const filePath = uploadedFile.metadata.fullPath
+      const fileCreatedAt = uploadedFile.metadata.updated
+
+      // upload metadata obj
+      this.firestoreFileCollection.add({
+        createdAt: fileCreatedAt,
+        filePath: filePath,
+        name: fileName,
+        description: description,
+        type: fileType,
+        uploadedBy: username
+      }).then( result => {
+        console.log('firestore uploaded', result)
+
+        this.resetInputKey()
+        this.setState({
+          newFile: {
+            file: '',
+            description: '',
+            username: ''
+          }
+        })
+      })
+
+    })
+  }
+
+  handleDelete(docID, filePath) {
+    // delete metadata in firestore
+    this.firestoreFileCollection.doc(docID).delete().then( () => {
+      // delete file 
+      this.storageRef.child(filePath).delete().then( () => {
+        console.log('all done!')
+      })      
+    })
+  }
+
+  resetInputKey() {
+    // force input field to reset
+    let randomString = Math.random().toString(36);
+    this.setState({
+      fileFieldKey: randomString
+    });
+  }
+
   render() {
     return (
-      <div className="row">
-        <div className="col s12">
-          <table>
-            <thead>
-              <tr>
+      <div className="">
+        <div className="row">
+          <div className="col s12">
+            <h1 className="center">Prototyp, pls hire me!</h1>
+          </div>
+        </div>
+        <div className="row">
+          <div className="col s12">
+            <table>
+              <thead>
+                <tr>
                   <th></th>
                   <th>Filename</th>
                   <th>Description</th>
                   <th>Uploaded by</th>
                   <th>Date</th>
                   <th></th>
-              </tr>
-            </thead>
+                </tr>
+              </thead>
 
-            <tbody>
-              {this.state.data ? this.state.data.map( file => {
-                return (
-                  <tr key={file.id}>
-                    <td>{file.type}</td>
-                    <td>{file.name}</td>
-                    <td>{file.description}</td>
-                    <td>{file.uploadedBy}</td>
-                    <td>{file.createdAt.seconds}</td>
-                    <td>Download | Edit | Delete</td>
-                  </tr>)
-              }) : null}
-            </tbody>
-          </table>
+              <tbody>
+                {this.state.data ? this.state.data.map( file => {
+                  return (
+                    <tr key={file.id}>
+                      <td>{file.type}</td>
+                      <td>{file.name}</td>
+                      <td>{file.description}</td>
+                      <td>{file.uploadedBy}</td>
+                      <td>{file.createdAt.split('T')[0]}</td>
+                      <td><a onClick={this.handleDelete.bind(this, file.id, file.filePath)}>Delete</a></td>
+                    </tr>)
+                }) : null}
+              </tbody>
+            </table>
+            {this.state.data && !this.state.data.length ? <p>No entries, pls upload files.</p> : ''}
+          </div>
         </div>
-        <form className="col s12" action="#">
-            <div className="row">
-              <h6>Upload file</h6>
-              <div className="input-field col s3">
-                <input placeholder="Username" id="username" type="text" className="validate" />
-              </div>
-              <div className="input-field col s3">
-                <input placeholder="Description" id="description" type="text" className="validate" />
-              </div>
-              <div className="file-field input-field col s3">
-                <div className="file-path-wrapper">
-                  <input className="file-path validate" id="choose-file" type="text" placeholder="Choose file" />
+        <div className= "row">
+          <form className="col s12" action="#">
+              <div className="row">
+                <h6 className="center">Upload file</h6>
+                <div className="input-field col s4">
+                  <input 
+                    placeholder="Username" 
+                    id="username" 
+                    type="text" 
+                    className="validate"
+                    value={this.state.newFile.username}
+                    onChange={this.handleUploadFileChange} 
+                  />
+                </div>
+                <div className="input-field col s4">
+                  <input 
+                    placeholder="Description"
+                    id="description"
+                    type="text"
+                    className="validate"
+                    value={this.state.newFile.description}
+                    onChange={this.handleUploadFileChange}
+                  />
+                </div>
+                <div className="file-field input-field col s4">
+                  <div className="file-path-wrapper">
+                    <input 
+                      type="file"
+                      ref={this.fileInput}
+                      key={this.state.fileFieldKey || '' }
+                      accept=".xml, .pdf, .jpeg"
+                    />
+                    <input 
+                      className="file-path validate"
+                      id="choose-file"
+                      type="text"
+                      placeholder="Choose file"
+                    />
+                  </div>
                 </div>
               </div>
-              <div className="input-field col s3">
-                <button className="btn waves-effect waves-light" type="submit" name="action">
-                  Upload
-                </button> 
+              <div className="row">
+                <div className="input-field col s12 center">
+                  <button 
+                    className="btn waves-effect waves-light" 
+                    type="submit" 
+                    name="action"
+                    onClick={this.handleUpload}
+                  >
+                    Upload
+                  </button> 
+                </div>
               </div>
-            </div>
-          </form>
+            </form>
+        </div>
       </div>
     )
   }
