@@ -64,7 +64,6 @@ class DataTable extends Component {
     this.firestoreFileCollection.onSnapshot( querySnapshot => {
       let filesData = []
       querySnapshot.forEach( doc => {
-        console.log(doc.data())
         filesData.push({
           name: doc.data().name,
           description: doc.data().description,
@@ -167,6 +166,13 @@ class DataTable extends Component {
     })
   }
 
+  // ugly handle but what the hell
+  handleShowFile(filePath) {
+    let path = this.storageRef.child(filePath).getDownloadURL().then( url => {
+      window.open(url, '_blank');
+    })
+  }
+
   resetInputKey() {
     // force input field to reset
     let randomString = Math.random().toString(36);
@@ -201,12 +207,16 @@ class DataTable extends Component {
                 {this.state.data ? this.state.data.map( file => {
                   return (
                     <tr key={file.id}>
-                      <td>{file.type}</td>
-                      <td>{file.name}</td>
+                      <td>
+                        {file.type === 'application/pdf' ? <i className="material-icons">picture_as_pdf</i> : ''}
+                        {file.type === 'image/jpeg' ? <i className="material-icons">image</i> : ''}
+                        {file.type === 'text/xml' ? <i className="material-icons">description</i> : ''}
+                      </td>
+                      <td><a href="#" onClick={this.handleShowFile.bind(this, file.filePath)}>{file.name}</a></td>
                       <td>{file.description}</td>
                       <td>{file.uploadedBy}</td>
                       <td>{file.createdAt.split('T')[0]}</td>
-                      <td><a onClick={this.handleDelete.bind(this, file.id, file.filePath)}>Delete</a></td>
+                      <td><a href="#" onClick={this.handleDelete.bind(this, file.id, file.filePath)}>Delete</a></td>
                     </tr>)
                 }) : null}
               </tbody>
