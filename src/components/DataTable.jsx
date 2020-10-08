@@ -51,16 +51,36 @@ class DataTable extends Component {
 
   }
 
+  uploadFile() {
+
+  }
+
   getFileList() {
     
-    firestoreFileList.get().then((result) => {
+    firestoreFileList.get().then( result => {
       //each doc
-      result.docs.map( doc => console.log(doc.data() ) )
+      
+      let filesData = []
+      result.docs.map( doc => {
+        console.log('doc.data', doc.data())
+        filesData.push({
+          name: doc.data().name,
+          description: doc.data().description,
+          uploadedBy: doc.data().uploadedBy,
+          createdAt: doc.data().createdAt,
+          id: doc.data().id,
+          type: doc.data().type
+        })
+      })
+      console.log('filesData', filesData)
+      this.setState({
+        data: filesData
+      })
     }).catch((error) => {
       console.log(error)
     })
 
-    storageFileListRef.listAll().then( res {
+    storageFileListRef.listAll().then( res => {
       res.prefixes.forEach( folderRef => {
         // All the prefixes under storageFileListRef.
         // You may call listAll() recursively on them.
@@ -87,34 +107,46 @@ class DataTable extends Component {
                   <th>Description</th>
                   <th>Uploaded by</th>
                   <th>Date</th>
+                  <th></th>
               </tr>
             </thead>
 
             <tbody>
-              <tr>
-                <td>Alvin</td>
-                <td>Alvin</td>
-                <td>Eclair</td>
-                <td>$0.87</td>
-                <td>Alvin</td>
-              </tr>
-              <tr>
-                <td>Alan</td>
-                <td>Jellybean</td>
-                <td>$3.76</td>
-                <td>Alvin</td>
-                <td>Alvin</td>
-              </tr>
-              <tr>
-                <td>Jonathan</td>
-                <td>Lollipop</td>
-                <td>$7.00</td>
-                <td>Alvin</td>
-                <td>Alvin</td>
-              </tr>
+              {this.state.data ? this.state.data.map( file => {
+                return (
+                  <tr key={file.id}>
+                    <td>{file.type}</td>
+                    <td>{file.name}</td>
+                    <td>{file.description}</td>
+                    <td>{file.uploadedBy}</td>
+                    <td>{file.createdAt.seconds}</td>
+                    <td>Download | Edit | Delete</td>
+                  </tr>)
+              }) : null}
             </tbody>
           </table>
         </div>
+        <form className="col s12" action="#">
+            <div className="row">
+              <h6>Upload file</h6>
+              <div className="input-field col s3">
+                <input placeholder="Username" id="username" type="text" className="validate" />
+              </div>
+              <div className="input-field col s3">
+                <input placeholder="Description" id="description" type="text" className="validate" />
+              </div>
+              <div className="file-field input-field col s3">
+                <div className="file-path-wrapper">
+                  <input className="file-path validate" id="choose-file" type="text" placeholder="Choose file" />
+                </div>
+              </div>
+              <div className="input-field col s3">
+                <button className="btn waves-effect waves-light" type="submit" name="action">
+                  Upload
+                </button> 
+              </div>
+            </div>
+          </form>
       </div>
     )
   }
