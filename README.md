@@ -1,5 +1,7 @@
 # file-manager-prototyp
 
+[Demo](https://sofiaringstrom.github.io/file-manager-prototyp/)
+
 ## Using
 
 * [Firebase](https://firebase.google.com/)
@@ -18,6 +20,17 @@ yarn install
 
 ```
 yarn start
+```
+
+## Build
+
+```
+yarn build
+```
+
+## Deploy to github page
+```
+yarn deploy
 ```
 
 ## Notes
