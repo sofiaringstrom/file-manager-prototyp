@@ -43,7 +43,7 @@ class DataTable extends Component {
     this.firestore = firebase.firestore()
     this.firestoreFileCollection = this.firestore.collection('files')
 
-    this.fileInput = React.createRef();
+    this.fileInput = React.createRef()
 
     this.handleUploadFileChange = this.handleUploadFileChange.bind(this)
     this.handleUpload = this.handleUpload.bind(this)
@@ -52,7 +52,6 @@ class DataTable extends Component {
   }
 
   UNSAFE_componentWillMount() {
-
     firebase.auth().signInAnonymously().then( result => {
       console.log('signed in as anon')
     })
@@ -61,7 +60,9 @@ class DataTable extends Component {
   }
 
   getFileList() {
-    
+
+    // listen for changes in collection and update
+    // state if new entries or removed
     this.firestoreFileCollection.onSnapshot( querySnapshot => {
       let filesData = []
       querySnapshot.forEach( doc => {
@@ -75,30 +76,15 @@ class DataTable extends Component {
           filePath: doc.data().filePath
         })
       })
-      //console.log('filesData', filesData)
       this.setState({
         data: filesData
       })
-    })
-
-    this.storageFileListRef.listAll().then( res => {
-      res.prefixes.forEach( folderRef => {
-        // All the prefixes under storageFileListRef.
-        // You may call listAll() recursively on them.
-      });
-      res.items.forEach( itemRef => {
-        // All the items under storageFileListRef.
-        //console.log('itemRef', itemRef)
-      });
-      }).catch( error => {
-        console.log(error.serverResponse_)
-      // Uh-oh, an error occurred!
     })
   }
 
   handleUploadFileChange(e) {
     let newFileState = this.state.newFile
-
+    
     switch (e.target.id) {
       case 'username':
         newFileState.username = e.target.value
@@ -114,10 +100,7 @@ class DataTable extends Component {
   }
 
   handleUpload(e) {
-    console.log('handleUpload')
     e.preventDefault()
-    
-    console.log(this.fileInput)
 
     const username = this.state.newFile.username
     const description = this.state.newFile.description
@@ -126,10 +109,10 @@ class DataTable extends Component {
     const fileType = this.fileInput.current.files[0].type
 
     const newFileRef = this.storageRef.child(fileName)
-    const newFileCollectionRef = this.storageRef.child(`files/${fileName}`)
-    // upload file first
+    const newFileCollectionRef = this.storageRef.child(`files/${fileName}`)i
+
+    // upload file first to get path
     newFileCollectionRef.put(file).then( uploadedFile => {
-      console.log('upload done', uploadedFile)
       const filePath = uploadedFile.metadata.fullPath
       const fileCreatedAt = uploadedFile.metadata.updated
 
@@ -142,8 +125,6 @@ class DataTable extends Component {
         type: fileType,
         uploadedBy: username
       }).then( result => {
-        console.log('firestore uploaded', result)
-
         this.resetInputKey()
         this.setState({
           newFile: {
@@ -161,25 +142,24 @@ class DataTable extends Component {
     // delete metadata in firestore
     this.firestoreFileCollection.doc(docID).delete().then( () => {
       // delete file 
-      this.storageRef.child(filePath).delete().then( () => {
-        console.log('all done!')
-      })      
+      this.storageRef.child(filePath).delete()  
     })
   }
 
   // ugly handle but what the hell
+  // it's just a prototype ;)
   handleShowFile(filePath) {
-    let path = this.storageRef.child(filePath).getDownloadURL().then( url => {
-      window.open(url, '_blank');
+    this.storageRef.child(filePath).getDownloadURL().then( url => {
+      window.open(url, '_blank')
     })
   }
 
+  // force input field to reset
   resetInputKey() {
-    // force input field to reset
-    let randomString = Math.random().toString(36);
+    const randomString = Math.random().toString(36)
     this.setState({
       fileFieldKey: randomString
-    });
+    })
   }
 
   render() {
