@@ -37,12 +37,14 @@ class DataTable extends Component {
       }
     }
 
+    // firebase
     this.storage = firebase.storage()
     this.storageRef = this.storage.ref()
     this.storageFileListRef = this.storageRef.child('files')
     this.firestore = firebase.firestore()
     this.firestoreFileCollection = this.firestore.collection('files')
 
+    // file input ref
     this.fileInput = React.createRef()
 
     this.handleUploadFileChange = this.handleUploadFileChange.bind(this)
@@ -62,7 +64,7 @@ class DataTable extends Component {
   getFileList() {
 
     // listen for changes in collection and update
-    // state if new entries or removed
+    // state if entries added or removed
     this.firestoreFileCollection.onSnapshot( querySnapshot => {
       let filesData = []
       querySnapshot.forEach( doc => {
@@ -92,6 +94,8 @@ class DataTable extends Component {
       case 'description':
         newFileState.description = e.target.value
         break
+      default:
+        break
     }
 
     this.setState({
@@ -102,21 +106,22 @@ class DataTable extends Component {
   handleUpload(e) {
     e.preventDefault()
 
+    const file = this.fileInput.current.files[0]
+    if (!file)
+      return
+    
     const username = this.state.newFile.username
     const description = this.state.newFile.description
-    const file = this.fileInput.current.files[0]
     const fileName = this.fileInput.current.files[0].name
     const fileType = this.fileInput.current.files[0].type
+    const newFileCollectionRef = this.storageRef.child(`files/${fileName}`)
 
-    const newFileRef = this.storageRef.child(fileName)
-    const newFileCollectionRef = this.storageRef.child(`files/${fileName}`)i
-
-    // upload file first to get path
+    // upload file first to storage to get file path
     newFileCollectionRef.put(file).then( uploadedFile => {
       const filePath = uploadedFile.metadata.fullPath
       const fileCreatedAt = uploadedFile.metadata.updated
 
-      // upload metadata obj
+      // upload metadata obj to firestore
       this.firestoreFileCollection.add({
         createdAt: fileCreatedAt,
         filePath: filePath,
@@ -125,7 +130,10 @@ class DataTable extends Component {
         type: fileType,
         uploadedBy: username
       }).then( result => {
+        // reset file input field
+        // to clear input
         this.resetInputKey()
+
         this.setState({
           newFile: {
             file: '',
@@ -138,6 +146,8 @@ class DataTable extends Component {
     })
   }
 
+  // delete metadata from filestore
+  // and file from storage
   handleDelete(docID, filePath) {
     // delete metadata in firestore
     this.firestoreFileCollection.doc(docID).delete().then( () => {
@@ -148,6 +158,9 @@ class DataTable extends Component {
 
   // ugly handle but what the hell
   // it's just a prototype ;)
+  // path should be set as link in <a> but
+  // choose to not do it cuz I didn't want to get stuck
+  // solving the promise, hope it's ok!
   handleShowFile(filePath) {
     this.storageRef.child(filePath).getDownloadURL().then( url => {
       window.open(url, '_blank')
@@ -155,6 +168,7 @@ class DataTable extends Component {
   }
 
   // force input field to reset
+  // and re-render
   resetInputKey() {
     const randomString = Math.random().toString(36)
     this.setState({
@@ -164,7 +178,7 @@ class DataTable extends Component {
 
   render() {
     return (
-      <div className="">
+      <div id="data-table">
         <div className="row">
           <div className="col s12">
             <h1 className="center">File Manager</h1>
@@ -189,9 +203,15 @@ class DataTable extends Component {
                   return (
                     <tr key={file.id}>
                       <td>
-                        {file.type === 'application/pdf' ? <i className="material-icons">picture_as_pdf</i> : ''}
-                        {file.type === 'image/jpeg' ? <i className="material-icons">image</i> : ''}
-                        {file.type === 'text/xml' ? <i className="material-icons">description</i> : ''}
+                        {file.type === 'application/pdf' ? 
+                          <i className="material-icons">picture_as_pdf</i> : 
+                        ''}
+                        {file.type === 'image/jpeg' ? 
+                          <i className="material-icons">image</i> : 
+                        ''}
+                        {file.type === 'text/xml' ? 
+                          <i className="material-icons">description</i> : 
+                        ''}
                       </td>
                       <td><a href="#" onClick={this.handleShowFile.bind(this, file.filePath)}>{file.name}</a></td>
                       <td>{file.description}</td>
@@ -214,7 +234,7 @@ class DataTable extends Component {
                     placeholder="Username" 
                     id="username" 
                     type="text" 
-                    className="validate"
+                    className=""
                     value={this.state.newFile.username}
                     onChange={this.handleUploadFileChange} 
                   />
@@ -224,7 +244,7 @@ class DataTable extends Component {
                     placeholder="Description"
                     id="description"
                     type="text"
-                    className="validate"
+                    className=""
                     value={this.state.newFile.description}
                     onChange={this.handleUploadFileChange}
                   />
@@ -237,7 +257,7 @@ class DataTable extends Component {
                       accept=".xml, .pdf, .jpeg"
                     />
                     <input 
-                      className="file-path validate"
+                      className="file-path "
                       id="choose-file"
                       type="text"
                       placeholder="Choose file"
@@ -263,7 +283,6 @@ class DataTable extends Component {
       </div>
     )
   }
-
 }
 
 export default DataTable
