@@ -48,6 +48,7 @@ class DataTable extends Component {
     this.handleUploadFileChange = this.handleUploadFileChange.bind(this)
     this.handleUpload = this.handleUpload.bind(this)
     this.handleDelete = this.handleDelete.bind(this)
+    this.resetInputKey = this.resetInputKey.bind(this)
   }
 
   UNSAFE_componentWillMount() {
@@ -186,7 +187,7 @@ class DataTable extends Component {
       <div className="">
         <div className="row">
           <div className="col s12">
-            <h1 className="center">Prototyp, pls hire me!</h1>
+            <h1 className="center">File Manager</h1>
           </div>
         </div>
         <div className="row">
@@ -253,7 +254,6 @@ class DataTable extends Component {
                     <input 
                       type="file"
                       ref={this.fileInput}
-                      key={this.state.fileFieldKey || '' }
                       accept=".xml, .pdf, .jpeg"
                     />
                     <input 
@@ -261,6 +261,7 @@ class DataTable extends Component {
                       id="choose-file"
                       type="text"
                       placeholder="Choose file"
+                      key={this.state.fileFieldKey || '' }
                     />
                   </div>
                 </div>
