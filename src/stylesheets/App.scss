@@ -1,5 +1,55 @@
 @import "~materialize-css/sass/materialize";
 
 body {
+  background: rgba(218, 179, 148, 0.1);
 
+  h1,
+  h2,
+  h3,
+  h4,
+  h5 {
+    color: #325e86;
+    font-weight: bold;
+  }
+
+  .btn,
+  .btn-large,
+  .btn-small {
+    background: #325e86 !important;
+
+    &:hover {
+      background: #dab394 !important;
+    }
+
+    &:focus {
+      background: #325e86 !important;
+    }
+  }
+
+  /* label focus color */
+  .input-field {
+    input:focus + label {
+      color: #325e86 !important;
+    }
+  }
+  /* label underline focus color */
+  .row {
+
+    .input-field {
+      input:focus {
+       border-bottom: 1px solid #325e86 !important;
+       box-shadow: 0 1px 0 0 #325e86 !important
+      }
+    }
+  }
+  
+  #data-table {
+    min-height: 100vh;
+    background: #fff;
+    padding: 0 40px;
+
+    form {
+      margin-top: 45px;
+    }
+  }
 }
