@@ -1,6 +1,6 @@
 # file-manager-prototyp
 
-[Demo](https://sofiaringstrom.github.io/file-manager-prototyp/)
+<a href="https://sofiaringstrom.github.io/file-manager-prototyp/" target="_blank">Demo</a>
 
 ## Using
 
